@@ -1,4 +1,4 @@
-package iot.mrdrivingduck.kismet_java_client;
+package iot.mrdrivingduck.kismet;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
