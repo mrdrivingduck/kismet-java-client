@@ -1,0 +1,28 @@
+[
+    {
+        "kismet.alert.location": {
+            "kismet.common.location.time_usec": 0,
+            "kismet.common.location.time_sec": 0,
+            "kismet.common.location.fix": 0,
+            "kismet.common.location.alt": 0,
+            "kismet.common.location.geopoint": [
+                0,
+                0
+            ]
+        },
+        "kismet.alert.text": "IEEE80211 network BSSID 74:05:A5:3C:C1:59 client 5C:EA:1D:20:E5:3B does not support management frame protection (MFP) which may ease client disassocation or deauthentication",
+        "kismet.alert.device_key": "00_0",
+        "kismet.alert.header": "NOCLIENTMFP",
+        "kismet.alert.class": "SPOOF",
+        "kismet.alert.hash": 2356155897,
+        "kismet.alert.severity": 5,
+        "kismet.alert.phy_id": 0,
+        "kismet.alert.timestamp": 1618148934.000076,
+        "kismet.alert.transmitter_mac": "74:05:A5:3C:C1:59",
+        "kismet.alert.source_mac": "5C:EA:1D:20:E5:3B",
+        "kismet.alert.dest_mac": "74:05:A5:3C:C1:59",
+        "kismet.alert.other_mac": "00:00:00:00:00:00",
+        "kismet.alert.channel": "0",
+        "kismet.alert.frequency": 0
+    }
+]
