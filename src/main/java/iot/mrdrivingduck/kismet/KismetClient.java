@@ -13,11 +13,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import iot.mrdrivingduck.kismet.annotation.ResourceKey;
 import iot.mrdrivingduck.kismet.message.AbstractKismetMessage;
 import iot.mrdrivingduck.kismet.message.BSSIDMessage;
 import iot.mrdrivingduck.kismet.message.TimeMessage;
+import iot.mrdrivingduck.kismet.util.KismetCommandBuilder;
 import iot.mrdrivingduck.kismet.util.Requester;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -70,25 +73,40 @@ public class KismetClient {
           });
       }
 
+      if (subscriptions.contains(BSSIDMessage.class)) {
+        future = future.compose(message -> {
+          // deal with previous message
+          if (requestingMsgType != null) {
+            publishMessage(message, requestingMsgType);
+          }
 
-      /**
+          // requesting for next message
+          requestingMsgType = BSSIDMessage.class;
+          KismetCommandBuilder kismetCmd = new KismetCommandBuilder(requestingMsgType);
+          kismetCmd.addRegex("kismet.device.base.type", "^Wi-Fi AP$");
+          return Requester.request(HttpMethod.POST, requestingMsgType, kismetCmd.build(), timestamp);
+        });
+      }
+
+
+      /*
        *
        * more messages to be handled here...
        */
 
-      // time message is necessary
       future.compose(message -> {
         if (requestingMsgType != null) {
           publishMessage(message, requestingMsgType);
         }
-        requestingMsgType = TimeMessage.class;
 
-        return Requester.request(HttpMethod.GET, TimeMessage.class, null);
+        // time message is necessary
+        requestingMsgType = TimeMessage.class;
+        return Requester.request(HttpMethod.GET, requestingMsgType, null);
       }).compose(message -> {
         if (requestingMsgType != null) {
           publishMessage(message, requestingMsgType);
         }
-        TimeMessage time = (TimeMessage) generateMessage(message, TimeMessage.class);
+        TimeMessage time = (TimeMessage) generateMessage(new JsonObject(message), TimeMessage.class);
         timestamp = time.getSec(); // update kismet timestamp
 
         requestingMsgType = null;
@@ -96,6 +114,7 @@ public class KismetClient {
       }).onFailure(error -> {
         requestingMsgType = null;
         login = false;
+        logger.error(error.getMessage(), error);
       });
     });
   }
@@ -103,24 +122,39 @@ public class KismetClient {
   private void publishMessage(
     String resource,
     Class<? extends AbstractKismetMessage> msgType) {
+
+    if (resource == null) {
+      return;
+    }
+
+    JsonArray tempArray;
+    if (resource.startsWith("[")) {
+      tempArray = new JsonArray(resource);
+    } else if (resource.startsWith("{")) {
+      tempArray = new JsonArray().add(new JsonObject(resource));
+    } else {
+      return;
+    }
+
     synchronized (listeners) {
       for (KismetListener listener : listeners) {
         if (listener.getSubscriptions().contains(msgType)) {
           // generate unique message for every subscriber listener
-          listener.onMessage(generateMessage(resource, msgType));
+          for (int i = 0; i < tempArray.size(); i++) {
+            listener.onMessage(generateMessage(tempArray.getJsonObject(i), msgType));
+          }
         }
       }
     }
   }
 
   private AbstractKismetMessage generateMessage(
-    String resource,
+    JsonObject resource,
     Class<? extends AbstractKismetMessage> msgType) {
 
-    JsonObject json = new JsonObject(resource);
     AbstractKismetMessage msg = null;
     try {
-      msg = (AbstractKismetMessage) msgType.newInstance(); // an object
+      msg = (AbstractKismetMessage) msgType.getDeclaredConstructor().newInstance(); // an object
 
       Method[] methods = msgType.getMethods();
       Arrays.sort(methods, new Comparator<Method>() {
@@ -133,13 +167,14 @@ public class KismetClient {
       for (Method method : methods) {
         ResourceKey key = method.getAnnotation(ResourceKey.class);
         // whether the method is a valid setter of message class
-        if (key != null && json.containsKey(key.value()) &&
+        if (key != null && resource.containsKey(key.value()) &&
           method.getParameterTypes().length == 1) {
-          method.invoke(msg, json.getValue(key.value())); // invoke setter
+          method.invoke(msg, resource.getValue(key.value())); // invoke setter
         }
       }
-    } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-      e.printStackTrace();
+    } catch (InstantiationException | IllegalAccessException |
+      InvocationTargetException | NoSuchMethodException e) {
+      logger.error(e.getMessage(), e);
     }
 
     return msg;
