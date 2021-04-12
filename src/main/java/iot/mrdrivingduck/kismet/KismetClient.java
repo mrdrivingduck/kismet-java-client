@@ -16,6 +16,7 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
 import iot.mrdrivingduck.kismet.annotation.ResourceKey;
 import iot.mrdrivingduck.kismet.message.AbstractKismetMessage;
+import iot.mrdrivingduck.kismet.message.BSSIDMessage;
 import iot.mrdrivingduck.kismet.message.TimeMessage;
 import iot.mrdrivingduck.kismet.util.Requester;
 import org.apache.logging.log4j.LogManager;
@@ -69,18 +70,6 @@ public class KismetClient {
           });
       }
 
-      if (subscriptions.contains(TimeMessage.class)) {
-        future = future.compose(message -> {
-          // deal with previous message
-          if (requestingMsgType != null) {
-            publishMessage(message, requestingMsgType);
-          }
-
-          // requesting for next message
-          requestingMsgType = TimeMessage.class;
-          return Requester.request(HttpMethod.GET, TimeMessage.class);
-        });
-      }
 
       /**
        *
@@ -92,10 +81,13 @@ public class KismetClient {
         if (requestingMsgType != null) {
           publishMessage(message, requestingMsgType);
         }
-
         requestingMsgType = TimeMessage.class;
-        return Requester.request(HttpMethod.GET, TimeMessage.class);
+
+        return Requester.request(HttpMethod.GET, TimeMessage.class, null);
       }).compose(message -> {
+        if (requestingMsgType != null) {
+          publishMessage(message, requestingMsgType);
+        }
         TimeMessage time = (TimeMessage) generateMessage(message, TimeMessage.class);
         timestamp = time.getSec(); // update kismet timestamp
 

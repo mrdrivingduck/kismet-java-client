@@ -3,10 +3,12 @@ package iot.mrdrivingduck.kismet.util;
 import java.util.List;
 
 import io.vertx.core.Future;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.client.HttpRequest;
+import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 import iot.mrdrivingduck.kismet.annotation.KismetApi;
@@ -63,6 +65,7 @@ public class Requester {
   public static Future<String> request(
     HttpMethod httpMethod,
     Class<? extends AbstractKismetMessage> msgType,
+    String kismetCommandJson,
     Object... uriParams) {
 
     String uri = String.format(msgType.getAnnotation(KismetApi.class).value(), uriParams);
@@ -75,7 +78,16 @@ public class Requester {
       }
     }
 
-    return request.send()
+    Future<HttpResponse<Buffer>> responseFuture;
+    if (httpMethod.equals(HttpMethod.POST)) {
+      MultiMap form = MultiMap.caseInsensitiveMultiMap();
+      form.set("json", kismetCommandJson);
+      responseFuture = request.sendForm(form);
+    } else {
+      responseFuture = request.send();
+    }
+
+    return responseFuture
       .onFailure(error -> {
         logger.error(new StringBuilder("Request kismet failed because of ").append(error.getMessage()));
       })
@@ -86,8 +98,8 @@ public class Requester {
           }
           return Future.succeededFuture(response.bodyAsString());
         }
-        return Future.failedFuture(new StringBuilder("Request kismet failed with ")
-          .append(response.statusCode()).append(": ").append(response.statusMessage()).toString());
+        return Future.failedFuture("Request kismet failed with " +
+          response.statusCode() + ": " + response.statusMessage());
       });
   }
 }
