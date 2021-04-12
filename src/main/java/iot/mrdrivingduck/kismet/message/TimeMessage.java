@@ -7,7 +7,7 @@ import iot.mrdrivingduck.kismet.annotation.ResourceKey;
 
 /**
  * Timestamp information provided by kismet.
- * 
+ *
  * @author Mr Dk.
  * @version 2021/04/09
  */
@@ -40,11 +40,11 @@ public class TimeMessage extends AbstractKismetMessage {
   @Override
   public String toString() {
     return new StringBuilder("TimeMessage: {")
-        .append("sec=")
-        .append(sec)
-        .append(", usec=")
-        .append(usec)
-        .append('}')
-        .toString();
+      .append("sec=")
+      .append(sec)
+      .append(", usec=")
+      .append(usec)
+      .append('}')
+      .toString();
   }
 }

@@ -31,8 +31,8 @@ public class Requester {
   public static void init(final Vertx vertx, String host, int port) {
     Requester.vertx = vertx;
     Requester.options = new WebClientOptions()
-        .setDefaultHost(host)
-        .setDefaultPort(port);
+      .setDefaultHost(host)
+      .setDefaultPort(port);
     logger.info(new StringBuilder("Requester initialized with: { host: ")
       .append(host).append(", port: ").append(port).append(" }")
     );
@@ -40,30 +40,30 @@ public class Requester {
 
   public static Future<Void> login(String username, String password) {
     return WebClient.create(vertx, options)
-        .request(HttpMethod.GET, "/session/check_setup_ok")
-        .addQueryParam("user", username)
-        .addQueryParam("password", password)
-        .send()
-        .onFailure(error -> {
-          logger.error(error.getMessage());
-        })
-        .compose(response -> {
-          if (response.statusCode() == 200) {
-            if (response.cookies() != null) {
-              cookies = response.cookies();
-            }
-            logger.info("Login success with cookie: " + response.cookies().size());
-            return Future.succeededFuture();
+      .request(HttpMethod.GET, "/session/check_setup_ok")
+      .addQueryParam("user", username)
+      .addQueryParam("password", password)
+      .send()
+      .onFailure(error -> {
+        logger.error(error.getMessage());
+      })
+      .compose(response -> {
+        if (response.statusCode() == 200) {
+          if (response.cookies() != null) {
+            cookies = response.cookies();
           }
-          logger.error("Login failed with " + response.statusCode() + ": " + response.statusMessage());
-          return Future.failedFuture(response.statusMessage());
-        });
+          logger.info("Login success with cookie: " + response.cookies().size());
+          return Future.succeededFuture();
+        }
+        logger.error("Login failed with " + response.statusCode() + ": " + response.statusMessage());
+        return Future.failedFuture(response.statusMessage());
+      });
   }
 
   public static Future<String> request(
-      HttpMethod httpMethod,
-      Class<? extends AbstractKismetMessage> msgType,
-      Object... uriParams) {
+    HttpMethod httpMethod,
+    Class<? extends AbstractKismetMessage> msgType,
+    Object... uriParams) {
 
     String uri = String.format(msgType.getAnnotation(KismetApi.class).value(), uriParams);
     WebClient client = WebClient.create(vertx, options);
@@ -76,18 +76,18 @@ public class Requester {
     }
 
     return request.send()
-        .onFailure(error -> {
-          logger.error(new StringBuilder("Request kismet failed because of ").append(error.getMessage()));
-        })
-        .compose(response -> {
-          if (response.statusCode() == 200) {
-            if (response.cookies() != null) {
-              cookies = response.cookies();
-            }
-            return Future.succeededFuture(response.bodyAsString());
+      .onFailure(error -> {
+        logger.error(new StringBuilder("Request kismet failed because of ").append(error.getMessage()));
+      })
+      .compose(response -> {
+        if (response.statusCode() == 200) {
+          if (response.cookies() != null) {
+            cookies = response.cookies();
           }
-          return Future.failedFuture(new StringBuilder("Request kismet failed with ")
-            .append(response.statusCode()).append(": ").append(response.statusMessage()).toString());
-        });
+          return Future.succeededFuture(response.bodyAsString());
+        }
+        return Future.failedFuture(new StringBuilder("Request kismet failed with ")
+          .append(response.statusCode()).append(": ").append(response.statusMessage()).toString());
+      });
   }
 }

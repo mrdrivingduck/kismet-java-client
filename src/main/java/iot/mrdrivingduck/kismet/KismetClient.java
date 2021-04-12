@@ -109,9 +109,9 @@ public class KismetClient {
   }
 
   private void publishMessage(
-      String resource,
-      Class<? extends AbstractKismetMessage> msgType) {
-    synchronized(listeners) {
+    String resource,
+    Class<? extends AbstractKismetMessage> msgType) {
+    synchronized (listeners) {
       for (KismetListener listener : listeners) {
         if (listener.getSubscriptions().contains(msgType)) {
           // generate unique message for every subscriber listener
@@ -122,16 +122,16 @@ public class KismetClient {
   }
 
   private AbstractKismetMessage generateMessage(
-      String resource,
-      Class<? extends AbstractKismetMessage> msgType) {
-    JsonObject json = new JsonObject(resource);
+    String resource,
+    Class<? extends AbstractKismetMessage> msgType) {
 
+    JsonObject json = new JsonObject(resource);
     AbstractKismetMessage msg = null;
     try {
       msg = (AbstractKismetMessage) msgType.newInstance(); // an object
 
       Method[] methods = msgType.getMethods();
-      Arrays.sort(methods, new Comparator<Method>(){
+      Arrays.sort(methods, new Comparator<Method>() {
         @Override
         public int compare(Method m, Method n) {
           return m.getName().compareTo(n.getName());
@@ -142,7 +142,7 @@ public class KismetClient {
         ResourceKey key = method.getAnnotation(ResourceKey.class);
         // whether the method is a valid setter of message class
         if (key != null && json.containsKey(key.value()) &&
-            method.getParameterTypes().length == 1) {
+          method.getParameterTypes().length == 1) {
           method.invoke(msg, json.getValue(key.value())); // invoke setter
         }
       }
