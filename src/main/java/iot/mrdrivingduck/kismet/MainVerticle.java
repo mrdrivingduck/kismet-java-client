@@ -1,14 +1,11 @@
 package iot.mrdrivingduck.kismet;
 
-import iot.mrdrivingduck.kismet.message.BSSIDMessage;
-import iot.mrdrivingduck.kismet.message.ClientMessage;
+import iot.mrdrivingduck.kismet.message.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
-import iot.mrdrivingduck.kismet.message.AbstractKismetMessage;
-import iot.mrdrivingduck.kismet.message.TimeMessage;
 
 public class MainVerticle extends AbstractVerticle {
 
@@ -32,9 +29,10 @@ public class MainVerticle extends AbstractVerticle {
       }
     };
 
-//    listener.subscribe(TimeMessage.class);
-//    listener.subscribe(BSSIDMessage.class);
+    listener.subscribe(TimeMessage.class);
+    listener.subscribe(BSSIDMessage.class);
     listener.subscribe(ClientMessage.class);
+    listener.subscribe(AlertMessage.class);
     client.register(listener);
 
   }

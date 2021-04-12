@@ -17,10 +17,7 @@ import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import iot.mrdrivingduck.kismet.annotation.ResourceKey;
-import iot.mrdrivingduck.kismet.message.AbstractKismetMessage;
-import iot.mrdrivingduck.kismet.message.BSSIDMessage;
-import iot.mrdrivingduck.kismet.message.ClientMessage;
-import iot.mrdrivingduck.kismet.message.TimeMessage;
+import iot.mrdrivingduck.kismet.message.*;
 import iot.mrdrivingduck.kismet.util.KismetCommandBuilder;
 import iot.mrdrivingduck.kismet.util.Requester;
 import org.apache.logging.log4j.LogManager;
@@ -101,6 +98,20 @@ public class KismetClient {
           KismetCommandBuilder kismetCmd = new KismetCommandBuilder(requestingMsgType);
           kismetCmd.addField("kismet.device.base.type", "kismet.device.base.type");
           kismetCmd.addRegex("kismet.device.base.type", "^Wi-Fi Device.*");
+          return Requester.request(HttpMethod.POST, requestingMsgType, kismetCmd.build(), timestamp);
+        });
+      }
+
+      if (subscriptions.contains(AlertMessage.class)) {
+        future = future.compose(message -> {
+          // deal with previous message
+          if (requestingMsgType != null) {
+            publishMessage(message, requestingMsgType);
+          }
+
+          // requesting for next message
+          requestingMsgType = AlertMessage.class;
+          KismetCommandBuilder kismetCmd = new KismetCommandBuilder(requestingMsgType);
           return Requester.request(HttpMethod.POST, requestingMsgType, kismetCmd.build(), timestamp);
         });
       }
