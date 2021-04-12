@@ -19,6 +19,7 @@ import io.vertx.core.json.JsonObject;
 import iot.mrdrivingduck.kismet.annotation.ResourceKey;
 import iot.mrdrivingduck.kismet.message.AbstractKismetMessage;
 import iot.mrdrivingduck.kismet.message.BSSIDMessage;
+import iot.mrdrivingduck.kismet.message.ClientMessage;
 import iot.mrdrivingduck.kismet.message.TimeMessage;
 import iot.mrdrivingduck.kismet.util.KismetCommandBuilder;
 import iot.mrdrivingduck.kismet.util.Requester;
@@ -88,6 +89,22 @@ public class KismetClient {
         });
       }
 
+      if (subscriptions.contains(ClientMessage.class)) {
+        future = future.compose(message -> {
+          // deal with previous message
+          if (requestingMsgType != null) {
+            publishMessage(message, requestingMsgType);
+          }
+
+          // requesting for next message
+          requestingMsgType = ClientMessage.class;
+          KismetCommandBuilder kismetCmd = new KismetCommandBuilder(requestingMsgType);
+          kismetCmd.addField("kismet.device.base.type", "kismet.device.base.type");
+          kismetCmd.addRegex("kismet.device.base.type", "^Wi-Fi Device.*");
+          return Requester.request(HttpMethod.POST, requestingMsgType, kismetCmd.build(), timestamp);
+        });
+      }
+
 
       /*
        *
@@ -141,7 +158,22 @@ public class KismetClient {
         if (listener.getSubscriptions().contains(msgType)) {
           // generate unique message for every subscriber listener
           for (int i = 0; i < tempArray.size(); i++) {
-            listener.onMessage(generateMessage(tempArray.getJsonObject(i), msgType));
+            JsonObject device = tempArray.getJsonObject(i);
+
+            /*
+             * Fuck off with kismet's regex filter. It's no use.
+             * I have to implement this silly filter.
+             */
+            if (msgType.equals(ClientMessage.class) &&
+              (!device.containsKey("kismet.device.base.type") ||
+              device.getString("kismet.device.base.type").equals("Wi-Fi AP"))) {
+              continue;
+            }
+
+            AbstractKismetMessage msg = generateMessage(tempArray.getJsonObject(i), msgType);
+            if (msg != null) {
+              listener.onMessage(msg);
+            }
           }
         }
       }
@@ -167,14 +199,18 @@ public class KismetClient {
       for (Method method : methods) {
         ResourceKey key = method.getAnnotation(ResourceKey.class);
         // whether the method is a valid setter of message class
-        if (key != null && resource.containsKey(key.value()) &&
-          method.getParameterTypes().length == 1) {
-          method.invoke(msg, resource.getValue(key.value())); // invoke setter
+        if (key != null && resource.containsKey(key.value())) {
+          Class<?>[] paramTypes = method.getParameterTypes();
+          Object val = resource.getValue(key.value());
+          if (paramTypes.length == 1 && val.getClass().equals(paramTypes[0])) {
+            method.invoke(msg, resource.getValue(key.value()));  // invoke setter
+          }
         }
       }
     } catch (InstantiationException | IllegalAccessException |
       InvocationTargetException | NoSuchMethodException e) {
       logger.error(e.getMessage(), e);
+      logger.error(resource);
     }
 
     return msg;

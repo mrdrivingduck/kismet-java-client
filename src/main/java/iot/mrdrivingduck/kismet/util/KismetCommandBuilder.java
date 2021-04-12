@@ -35,6 +35,10 @@ public class KismetCommandBuilder {
     this.regex.add(Arrays.asList(path, regex));
   }
 
+  public void addField(String path, String alias) {
+    this.fields.add(Arrays.asList(path, alias));
+  }
+
   public String build() {
     return new JsonObject().put("fields", fields).put("regex", regex).toString();
   }
