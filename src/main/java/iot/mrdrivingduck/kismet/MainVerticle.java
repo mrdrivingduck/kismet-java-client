@@ -33,6 +33,7 @@ public class MainVerticle extends AbstractVerticle {
     listener.subscribe(BSSIDMessage.class);
     listener.subscribe(ClientMessage.class);
     listener.subscribe(AlertMessage.class);
+    listener.subscribe(MsgMessage.class);
     client.register(listener);
 
   }

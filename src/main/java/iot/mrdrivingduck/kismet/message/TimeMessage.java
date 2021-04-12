@@ -19,13 +19,13 @@ public class TimeMessage extends AbstractKismetMessage {
 
   @KismetApiPath("kismet.system.timestamp.sec")
   @ResourceKey("kismet.system.timestamp.sec")
-  public void setSec(long sec) {
+  public void setSec(Integer sec) {
     this.sec = sec;
   }
 
   @KismetApiPath("kismet.system.timestamp.usec")
   @ResourceKey("kismet.system.timestamp.usec")
-  public void setUsec(long usec) {
+  public void setUsec(Integer usec) {
     this.usec = usec;
   }
 

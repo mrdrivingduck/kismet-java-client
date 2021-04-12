@@ -116,6 +116,19 @@ public class KismetClient {
         });
       }
 
+      if (subscriptions.contains(MsgMessage.class)) {
+        future = future.compose(message -> {
+          // deal with previous message
+          if (requestingMsgType != null) {
+            publishMessage(message, requestingMsgType);
+          }
+
+          // requesting for next message
+          requestingMsgType = MsgMessage.class;
+          return Requester.request(HttpMethod.GET, requestingMsgType, null);
+        });
+      }
+
 
       /*
        *
@@ -169,19 +182,19 @@ public class KismetClient {
         if (listener.getSubscriptions().contains(msgType)) {
           // generate unique message for every subscriber listener
           for (int i = 0; i < tempArray.size(); i++) {
-            JsonObject device = tempArray.getJsonObject(i);
+            JsonObject msgJson = tempArray.getJsonObject(i);
 
             /*
              * Fuck off with kismet's regex filter. It's no use.
              * I have to implement this silly filter.
              */
             if (msgType.equals(ClientMessage.class) &&
-              (!device.containsKey("kismet.device.base.type") ||
-              device.getString("kismet.device.base.type").equals("Wi-Fi AP"))) {
+              (!msgJson.containsKey("kismet.device.base.type") ||
+                msgJson.getString("kismet.device.base.type").equals("Wi-Fi AP"))) {
               continue;
             }
 
-            AbstractKismetMessage msg = generateMessage(tempArray.getJsonObject(i), msgType);
+            AbstractKismetMessage msg = generateMessage(msgJson, msgType);
             if (msg != null) {
               listener.onMessage(msg);
             }
@@ -213,6 +226,7 @@ public class KismetClient {
         if (key != null && resource.containsKey(key.value())) {
           Class<?>[] paramTypes = method.getParameterTypes();
           Object val = resource.getValue(key.value());
+//          logger.warn(val.getClass().getName() + " " + paramTypes[0].getName() + " " + key.value());
           if (paramTypes.length == 1 && val.getClass().equals(paramTypes[0])) {
             method.invoke(msg, resource.getValue(key.value()));  // invoke setter
           }
