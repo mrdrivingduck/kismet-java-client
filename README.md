@@ -1,14 +1,10 @@
 # Kismet-java-client ![image](https://img.shields.io/badge/vert.x-4.0.3-purple.svg)
 
-🌉 A Java client for Kismet RESTful API.
-
-This application was generated using [Vert.x starter](http://start.vertx.io).
-
-## About
-
-Java client for retrieving information from [*kismet*](https://github.com/kismetwireless/kismet) server by its *RESTful* API.
+🌉 A Java client for [*kismet*](https://github.com/kismetwireless/kismet) RESTful API.
 
 ## Environments
+
+This application was generated using [Vert.x starter](http://start.vertx.io).
 
 - *kismet* release: 2020-12
 - Java 8+
@@ -100,6 +96,7 @@ Here is an example on how to implement your own `APMessage`:
 @MessageType("AP")  // message type
 @KismetApi("/devices/views/phydot11_accesspoints/devices.json")  // end point of kismet server to request
 public class APMessage extends AbstractKismetMessage {
+    
     // fields
     private String ssid;
     private int signal;
@@ -126,16 +123,16 @@ public class APMessage extends AbstractKismetMessage {
      * are in a specific JSON object of kismet's response:
      * 
      * {
-     *     "kismet.device.base.signal": {
-     *         "kismet.common.signal.last_signal": -58
-     *     }
+     *   "kismet.device.base.signal": {
+     *       "kismet.common.signal.last_signal": -58
+     *   }
      * }
      *
      * Here, @KismetApiPath specifies the detailed field you want to fetch,
      * and kismet will response a field aliased with @ResourceKey:
      * 
      * {
-     *     "kismet.common.signal.last_signal": -58
+     *   "kismet.common.signal.last_signal": -58
      * }
      *
      * Then kismet client can get the field from response JSON by @ResourceKey.
