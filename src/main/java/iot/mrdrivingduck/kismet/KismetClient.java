@@ -44,13 +44,18 @@ public class KismetClient {
 
   private Class<? extends AbstractKismetMessage> requestingMsgType;
 
-  public KismetClient(final Vertx vertx, long period, String host, int port) {
+  public KismetClient(final Vertx vertx, long period,
+                      String host, int port,
+                      String username, String password) {
     listeners = new ArrayList<>();
     subscriptions = new HashSet<>();
 
     Requester.init(vertx, host, port);
+
     timerID = vertx.setPeriodic(period, timeout -> {
+
       if (!running.get()) {
+        // client is stopped
         // onTerminate all listeners
         for (KismetListener listener : listeners) {
           listener.onTerminate("Client killed.");
@@ -64,7 +69,7 @@ public class KismetClient {
 
       if (!login) {
         future = future
-          .compose(empty -> Requester.login("username", "password"))
+          .compose(empty -> Requester.login(username, password))
           .compose(v -> {
             login = true;
             return Future.succeededFuture();
@@ -73,7 +78,7 @@ public class KismetClient {
 
       if (subscriptions.contains(BSSIDMessage.class)) {
         future = future.compose(message -> {
-          // deal with previous message
+          // deal with previous message type
           if (requestingMsgType != null) {
             publishMessage(message, requestingMsgType);
           }
@@ -88,7 +93,7 @@ public class KismetClient {
 
       if (subscriptions.contains(ClientMessage.class)) {
         future = future.compose(message -> {
-          // deal with previous message
+          // deal with previous message type
           if (requestingMsgType != null) {
             publishMessage(message, requestingMsgType);
           }
@@ -104,7 +109,7 @@ public class KismetClient {
 
       if (subscriptions.contains(AlertMessage.class)) {
         future = future.compose(message -> {
-          // deal with previous message
+          // deal with previous message type
           if (requestingMsgType != null) {
             publishMessage(message, requestingMsgType);
           }
@@ -118,7 +123,7 @@ public class KismetClient {
 
       if (subscriptions.contains(MsgMessage.class)) {
         future = future.compose(message -> {
-          // deal with previous message
+          // deal with previous message type
           if (requestingMsgType != null) {
             publishMessage(message, requestingMsgType);
           }
@@ -129,9 +134,7 @@ public class KismetClient {
         });
       }
 
-
       /*
-       *
        * more messages to be handled here...
        */
 
@@ -140,7 +143,7 @@ public class KismetClient {
           publishMessage(message, requestingMsgType);
         }
 
-        // time message is necessary
+        // time message is necessary, no matter it is subscribed
         requestingMsgType = TimeMessage.class;
         return Requester.request(HttpMethod.GET, requestingMsgType, null);
       }).compose(message -> {
@@ -210,7 +213,7 @@ public class KismetClient {
 
     AbstractKismetMessage msg = null;
     try {
-      msg = (AbstractKismetMessage) msgType.getDeclaredConstructor().newInstance(); // an object
+      msg = msgType.getDeclaredConstructor().newInstance(); // an object
 
       Method[] methods = msgType.getMethods();
       Arrays.sort(methods, new Comparator<Method>() {

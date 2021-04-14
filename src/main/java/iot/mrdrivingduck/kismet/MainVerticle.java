@@ -15,7 +15,10 @@ public class MainVerticle extends AbstractVerticle {
   public void start(Promise<Void> startPromise) throws Exception {
     iot.mrdrivingduck.kismet.util.Logger.init();
 
-    KismetClient client = new KismetClient(vertx, 3000, "192.168.2.106", 2501);
+    KismetClient client = new KismetClient(
+      vertx, 3000,
+      "192.168.2.106", 2501,
+      "username", "password");
 
     KismetListener listener = new KismetListener() {
       @Override
@@ -34,7 +37,8 @@ public class MainVerticle extends AbstractVerticle {
     listener.subscribe(ClientMessage.class);
     listener.subscribe(AlertMessage.class);
     listener.subscribe(MsgMessage.class);
-    client.register(listener);
 
+    client.register(listener);
+//    client.close();
   }
 }
